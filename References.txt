@@ -1,0 +1,16 @@
+1) Сайт с сетлистами
+https://www.setlist.fm/
+
+2) База данных по артистам, которая содержит MBID, используемый в запросах к setlist.fm
+https://musicbrainz.org/
+
+3) Удобное либа на python с API для доступа к данным с сайта musicbrainz.org через web-service
+https://python-musicbrainzngs.readthedocs.io/en/v0.6/
+https://github.com/alastair/python-musicbrainzngs
+
+4) Пример на python преобразования сетлиста с сайта setlist.fm в плейлист spotify:
+4.1) https://github.com/nvblueboy/SetlistToSpotify
+4.2) https://github.com/Jakod96/SpotifySetlistGenerator
+
+5) Получение .csv файла со всей информацией о концертах или треках для одного артиста с setlist.fm:
+https://github.com/fblamanna/TheConcertsTracker
