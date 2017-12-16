@@ -28,14 +28,14 @@ if (__name__ == '__main__'):
     
     #search_artist = input("Prompt artist or group name: ")
     #search_artist = "Parkway drive"
-    search_artist = "Parkway Drive"
+    search_artist = "Parkway drive"
     print ("Search for artist:", search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
         interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
         print(interesting_artist)
         setlistGetter = SetlistGetter(args.setlistfm_key)
-        events = setlistGetter.get_artist_events(interesting_artist, 5)
+        events = setlistGetter.get_artist_events(interesting_artist, 20)
         print (events)
         
             
