@@ -9,7 +9,7 @@ import pandas as pd
 import math
 
 class SetlistGetter:
-    _events_columns = ['eventID',
+    _events_columns = ['event_id',
 	                'artist',
 	                'eventdate',
 	                'tourname',
@@ -23,6 +23,13 @@ class SetlistGetter:
 	                'state_id',
 	                'country',
 	                'country_id']
+    _set_columns = ['event_id',
+                    'song_num',
+                    'name',
+                    'encore',
+                    'tape',
+                    'info',
+                    ]
 
     def __init__(self, api_key):
         self._api_key = api_key
@@ -63,7 +70,7 @@ class SetlistGetter:
                 result_events_df = result_events_df.append(
                         {
                                 # Event ID
-                                'eventID': str(data['setlist'][i]['id']),
+                                'event_id': str(data['setlist'][i]['id']),
                                 # Artist
                                 'artist': str(data['setlist'][i]['artist']['name']),
                                 # Eventdate
@@ -94,3 +101,31 @@ class SetlistGetter:
                 processed_events += 1
         result_events_df['eventdate'] = pd.to_datetime(result_events_df['eventdate'], format='%d-%m-%Y')
         return result_events_df.sort_values(by=['eventdate'], ascending=False)
+    
+    def get_setlist_for_event(self, event_id):
+        # Call Setlist.fm API
+        url = 'https://api.setlist.fm/rest/1.0/setlist/' + event_id
+        headers = {'Accept': 'application/json', 'x-api-key': self._api_key}
+        r = requests.get(url, headers=headers)	
+        # Get .json Data
+        data = r.json()
+        result_setlist_df = pd.DataFrame(columns = self._set_columns)
+        if ('sets' in data):
+            song_num = 0
+            for i in range(len(data['sets']['set'])):
+                encore = 0
+                if 'encore' in data['sets']['set'][i]:
+                    encore = 1
+                for j in range(len(data['sets']['set'][i]['song'])):
+                    result_setlist_df = result_setlist_df.append( 
+                        {
+                            'event_id': event_id,
+                            'song_num': song_num,
+                            'name': data['sets']['set'][i]['song'][j].get('name'),
+                            'encore': encore,
+                            'tape': data['sets']['set'][i]['song'][j].get('tape', False),
+                            'info': data['sets']['set'][i]['song'][j].get('info', ''),   
+                        }, ignore_index = True)
+                    song_num+=1
+        return result_setlist_df
+                

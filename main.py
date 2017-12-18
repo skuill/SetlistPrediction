@@ -35,8 +35,10 @@ if (__name__ == '__main__'):
         interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
         print(interesting_artist)
         setlistGetter = SetlistGetter(args.setlistfm_key)
-        events = setlistGetter.get_artist_events(interesting_artist, 20)
-        print (events)
+        events = setlistGetter.get_artist_events(interesting_artist, 5)
+        setlist_dfs = []
+        for i in range(len(events)):
+            setlist_dfs.append(setlistGetter.get_setlist_for_event(events['event_id'][i]))
         
             
             
