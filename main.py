@@ -2,11 +2,12 @@ import sys
 import argparse
 from setlistfm import SetlistGetter
 import pandas as pd
+import utils
 
 from musicbrainz import MusicbrainzSearcher
 
 if (__name__ == '__main__'):    
-    parser = argparse.ArgumentParser(prog="SetlistPrediction")
+    parser = argparse.ArgumentParser(prog='SetlistPrediction')
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-u', '--username', 
                                type=str, help="Specify username", 
@@ -21,21 +22,27 @@ if (__name__ == '__main__'):
     args = parser.parse_args()
     
     if args.username and args.password and args.setlistfm_key:
-        print ("User: {}. Password: {}. Setlistfm API key: {}.".format(args.username, args.password, args.setlistfm_key))
+        print ('User: {}. Password: {}. Setlistfm API key: {}.'.format(args.username, args.password, args.setlistfm_key))
     else:
         parser.print_help()   
-        sys.exit("Good Bye!")     
+        sys.exit('Good Bye!')     
     
-    #search_artist = input("Prompt artist or group name: ")
-    #search_artist = "Parkway drive"
-    search_artist = "Parkway drive"
-    print ("Search for artist:", search_artist)
+    #search_artist = input('Prompt artist or group name: ')
+    #search_artist = 'Parkway drive'
+    search_artist = 'Parkway drive'
+    print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
         interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
         print(interesting_artist)
-        setlistGetter = SetlistGetter(args.setlistfm_key)
-        events, setlists = setlistGetter.get_artist_events(interesting_artist, 5)
+        events_df = utils.load_csv(interesting_artist.name, 'events')
+        setlists_df = utils.load_csv(interesting_artist.name, 'setlists')
+        if events_df is None or setlists_df is None:
+            setlistGetter = SetlistGetter(args.setlistfm_key)
+            events_df, setlists_df = setlistGetter.get_artist_events(interesting_artist, 5)
+            utils.save_to_csv(interesting_artist.name, events_df, 'events')
+            utils.save_to_csv(interesting_artist.name, setlists_df, 'setlists')
+        #utils.save_to_csv_xls(dir_path)
         #setlist_dfs = []
         #for i in range(len(events)):
             #setlist_dfs.append(setlistGetter.get_setlist_for_event(events['event_id'][i]))
