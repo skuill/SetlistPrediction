@@ -36,10 +36,26 @@ class SetlistGetter:
 
     def parse_events_dictionary(self, events_dictionary):
         result_events_df = pd.DataFrame(columns = self._events_columns)
-        tourName = ''
+        tourName = None
         tour = events_dictionary.get('tour')
         if tour is not None:
-            tourName = tour['name']
+            tourName = str(tour['name'])
+        latitude = None
+        longitude = None
+        coords = events_dictionary['venue']['city'].get('coords')
+        if coords is not None:
+            latitude_str = coords.get('lat')
+            if latitude_str is not None:
+                latitude = float(latitude_str)
+            longitude_str = coords.get('long')
+            if longitude_str is not None:
+                longitude = float(longitude_str)
+        country_name = None
+        country_code = None
+        country = events_dictionary['venue']['city'].get('country')
+        if country is not None:
+            country_name = str(country.get('name'))
+            country_code = str(country.get('code'))
         result_events_df = result_events_df.append(
             {
                 # Event ID
@@ -59,17 +75,17 @@ class SetlistGetter:
                 # City ID
                 'city_id': str(events_dictionary['venue']['city'].get('id')),
                 # City Latitude
-                'city_lat': float(events_dictionary['venue']['city']['coords'].get('lat')),
+                'city_lat': latitude,
                 # City Longitude
-                'city_lon': float(events_dictionary['venue']['city']['coords'].get('long')),
+                'city_lon': longitude,
                 # State
                 'state': str(events_dictionary['venue']['city'].get('state')),
                 # State Code
                 'state_id': str(events_dictionary['venue']['city'].get('stateCode')),
                 # Country
-                'country': str(events_dictionary['venue']['city']['country'].get('name')),
+                'country': country_name,
                 # Country Code
-                'country_id': str(events_dictionary['venue']['city']['country'].get('code'))
+                'country_id': country_code
             }, ignore_index=True)
         return result_events_df
 
@@ -86,14 +102,16 @@ class SetlistGetter:
             if (total_events < events_count):
                 events_count = total_events
         else: 
-            events_count = total_events
+            events_count = total_events        
         # Total Number of Pages needed to load
         pages_count = math.ceil(events_count/20)
         result_events_df = pd.DataFrame(columns = self._events_columns)
         result_setlist_df = pd.DataFrame(columns = self._set_columns)
         processed_events = 0
-        
+        print ('Events to found:', events_count, '. Pages to process:', pages_count)
+                
         for page in range(pages_count):
+            print('Process page:', page+1)
             url = 'https://api.setlist.fm/rest/1.0/artist/' + artist.mbid + '/setlists?p=' + str(page+1)
             headers = {'Accept': 'application/json', 'x-api-key': self._api_key}
             r = requests.get(url, headers=headers)	

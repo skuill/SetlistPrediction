@@ -29,7 +29,8 @@ if (__name__ == '__main__'):
     
     #search_artist = input('Prompt artist or group name: ')
     #search_artist = 'Parkway drive'
-    search_artist = 'Parkway drive'
+    #search_artist = 'Parkway drive'
+    search_artist = 'red hot chili peppers'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
@@ -39,15 +40,19 @@ if (__name__ == '__main__'):
         setlists_df = utils.load_csv(interesting_artist.name, 'setlists')
         if events_df is None or setlists_df is None:
             setlistGetter = SetlistGetter(args.setlistfm_key)
-            events_df, setlists_df = setlistGetter.get_artist_events(interesting_artist, 5)
+            events_df, setlists_df = setlistGetter.get_artist_events(interesting_artist)
             utils.save_to_csv(interesting_artist.name, events_df, 'events')
             utils.save_to_csv(interesting_artist.name, setlists_df, 'setlists')
-        #utils.save_to_csv_xls(dir_path)
-        #setlist_dfs = []
-        #for i in range(len(events)):
-            #setlist_dfs.append(setlistGetter.get_setlist_for_event(events['event_id'][i]))
-        
             
+        #Events statistics
+        city_events_counts = utils.dataframe_group_by_column(events_df, 'city')
+        country_events_counts = utils.dataframe_group_by_column(events_df,'country')
+        russian_events = events_df[events_df['country']=='Russia']
+        
+        #Setlists statistics
+        city_setlists_counts = utils.dataframe_group_by_column(setlists_df, 'name')
+        russian_setlist = setlists_df[setlists_df['event_id'].isin(russian_events['event_id'])]
+        russian_setlist_counts = utils.dataframe_group_by_column(russian_setlist, 'name')
             
         
         

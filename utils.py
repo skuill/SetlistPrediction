@@ -18,3 +18,9 @@ def load_csv(dir_path, file_name):
         return df
     else:
         return None
+    
+def dataframe_group_by_column(df, column_name):
+    return df.groupby([column_name])[column_name] \
+              .count() \
+              .reset_index(name='count') \
+              .sort_values(['count'], ascending=False)
