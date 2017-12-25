@@ -28,9 +28,9 @@ if (__name__ == '__main__'):
         sys.exit('Good Bye!')     
     
     #search_artist = input('Prompt artist or group name: ')
-    #search_artist = 'Parkway drive'
-    #search_artist = 'Parkway drive'
-    search_artist = 'red hot chili peppers'
+    search_artist = 'Parkway drive'
+    #search_artist = 'red hot chili peppers'
+    #search_artist = 'rise against'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
@@ -53,6 +53,11 @@ if (__name__ == '__main__'):
         city_setlists_counts = utils.dataframe_group_by_column(setlists_df, 'name')
         russian_setlist = setlists_df[setlists_df['event_id'].isin(russian_events['event_id'])]
         russian_setlist_counts = utils.dataframe_group_by_column(russian_setlist, 'name')
+        
+        # events have many TourName NAN. Ignore this. Maybe it's important feature
+        events_df_nan = events_df[pd.isnull(events_df.drop(['tourname'], axis=1)).any(axis=1)]
+        # setlists have many INFO NAN. Ignore this.
+        setlists_df_nan = setlists_df[pd.isnull(setlists_df.drop(['info'], axis=1)).any(axis=1)]
             
         
         
