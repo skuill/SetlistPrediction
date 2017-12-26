@@ -111,7 +111,7 @@ class SetlistGetter:
         print ('Events to found:', events_count, '. Pages to process:', pages_count)
                 
         for page in range(pages_count):
-            print('Process page:', page+1)
+            print('Process page:', page+1, '/', pages_count)
             url = 'https://api.setlist.fm/rest/1.0/artist/' + artist.mbid + '/setlists?p=' + str(page+1)
             headers = {'Accept': 'application/json', 'x-api-key': self._api_key}
             r = requests.get(url, headers=headers)	

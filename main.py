@@ -28,13 +28,14 @@ if (__name__ == '__main__'):
         sys.exit('Good Bye!')     
     
     #search_artist = input('Prompt artist or group name: ')
-    search_artist = 'Parkway drive'
+    #search_artist = 'Parkway drive'
     #search_artist = 'red hot chili peppers'
-    #search_artist = 'rise against'
+    search_artist = 'rise against'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
         interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
+        release_groups, releases = musicbrainz_searcher.get_musicbrainz_albums(interesting_artist.mbid)
         print(interesting_artist)
         events_df = utils.load_csv(interesting_artist.name, 'events')
         setlists_df = utils.load_csv(interesting_artist.name, 'setlists')
@@ -58,8 +59,3 @@ if (__name__ == '__main__'):
         events_df_nan = events_df[pd.isnull(events_df.drop(['tourname'], axis=1)).any(axis=1)]
         # setlists have many INFO NAN. Ignore this.
         setlists_df_nan = setlists_df[pd.isnull(setlists_df.drop(['info'], axis=1)).any(axis=1)]
-            
-        
-        
-        
-                

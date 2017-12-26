@@ -21,6 +21,9 @@ class Artist:
         return 'Artist name: {}, MBID: {}'.format(self.name, self.mbid)
 
 class MusicbrainzSearcher:
+    _recorings_columns=['title',
+                        'date',
+                        'type']
     def __init__(self, username, password):
         self._username = username
         self._password = password
@@ -43,3 +46,12 @@ class MusicbrainzSearcher:
                     return Artist(artist['name'], artist['id'])
         return None
     
+    def get_musicbrainz_albums(self, artist_id):
+        try:
+            release_groups = musicbrainzngs.search_release_groups(arid=artist_id)
+            releases = musicbrainzngs.search_releases(arid=artist_id)
+        except WebServiceError as exc:
+            raise Exception('Something went wrong with the request to musicbrainz: %s' % exc)
+        else:
+            return (release_groups, releases)
+                    
