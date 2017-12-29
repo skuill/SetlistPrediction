@@ -29,13 +29,13 @@ if (__name__ == '__main__'):
     
     #search_artist = input('Prompt artist or group name: ')
     #search_artist = 'Parkway drive'
-    #search_artist = 'red hot chili peppers'
-    search_artist = 'rise against'
+    search_artist = 'red hot chili peppers'
+    #search_artist = 'rise against'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
         interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
-        release_groups, releases = musicbrainz_searcher.get_musicbrainz_albums(interesting_artist.mbid)
+        recordings = musicbrainz_searcher.get_musicbrainz_albums(interesting_artist.mbid)
         print(interesting_artist)
         events_df = utils.load_csv(interesting_artist.name, 'events')
         setlists_df = utils.load_csv(interesting_artist.name, 'setlists')
