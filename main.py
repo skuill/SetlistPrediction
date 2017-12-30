@@ -29,8 +29,10 @@ if (__name__ == '__main__'):
     
     #search_artist = input('Prompt artist or group name: ')
     #search_artist = 'Parkway drive'
-    search_artist = 'red hot chili peppers'
+    #search_artist = 'red hot chili peppers'
     #search_artist = 'rise against'
+    #search_artist = 'Bury Tomorrow'
+    search_artist = 'In Fear and Faith'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       

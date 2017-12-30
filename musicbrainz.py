@@ -3,6 +3,7 @@ from musicbrainzngs import WebServiceError
 import math
 import pandas as pd
 from datetime import datetime
+import calendar
 
 class Artist:
     def __init__(self, name, mbid):
@@ -23,13 +24,20 @@ class Artist:
         return 'Artist name: {}, MBID: {}'.format(self.name, self.mbid)
 
 class MusicbrainzSearcher:
-    _albums_columns=['id',
+    _release_groups_columns=['id',
                         'title',
                         'date',
+                        'primary-type',
                         'type']
     _interesting_albums_type = ['Album',
                                 #'Single',
                                 'EP']
+    _release_columns= ['id',
+                       'title',
+                       'status',
+                       'date',
+                       'primary-type',
+                       'type']
     
     def __init__(self, username, password):
         self._username = username
@@ -94,41 +102,74 @@ class MusicbrainzSearcher:
         else:
             return releases_list
     
-    def _get_recordings_from_release_groups(self, release_groups_list):
-        result_recordings_df = pd.DataFrame(columns = self._albums_columns)
+    def _release_groups_list_to_df(self, release_groups_list):
+        result_release_groups_df = pd.DataFrame(columns = self._release_groups_columns)
         for i in range(len(release_groups_list)):
             for j in range(len(release_groups_list[i]['release-group-list'])):
                 current_release_group = release_groups_list[i]['release-group-list'][j]
                 if ('primary-type' in current_release_group):
                     if (current_release_group['primary-type'] in self._interesting_albums_type and current_release_group['type'] != 'Live'):
-                        result_recordings_df = result_recordings_df.append(
+                        result_release_groups_df = result_release_groups_df.append(
                         {
                             'id': current_release_group['id'],
                             'title': current_release_group['title'],
-                            'type': current_release_group['primary-type']
+                            'type': current_release_group['type'],
+                            'primary-type': current_release_group['primary-type']
                         }, ignore_index=True)
-        return result_recordings_df
+        return result_release_groups_df
     
-    def _get_date_from_release_str(self, release_date_str):
-        separater_count = release_date_str.count('-')
-        separater_to_format = {
-                0: '%Y',
-                1: '%Y-%m',
-                2: '%Y-%m-%d'}
-        return (separater_count, datetime.strptime(release_date_str, separater_to_format[separater_count]))
-    
-    def _fill_recordings_with_release_data(self, recordings_df, releases_list):
-        last_dates_priorities={}
+    def _releases_list_to_df(self, releases_list):
+        result_release_df = pd.DataFrame(columns=self._release_columns)
         for i in range(len(releases_list)):
             for j in range(len(releases_list[i]['release-list'])):
                 current_release = releases_list[i]['release-list'][j]
-                if ('status' in current_release and current_release['status'] == 'Official'):
-                    current_release_id = current_release['release-group']['id']
-                    if (current_release_id in recordings_df['id'].values and 'date' in current_release):
-                        (date_priority, current_release_date) = self._get_date_from_release_str(current_release['date'])
+                current_row = {}
+                if ('status' in current_release):
+                    current_row['status'] = current_release['status']
+                current_row['id'] = current_release['release-group']['id']
+                if ('type' in current_release['release-group']):
+                    current_row['type'] = current_release['release-group']['type']
+                if ('primary-type' in current_release['release-group']):
+                    current_row['primary-type'] = current_release['release-group']['primary-type']
+                if ('date' in current_release):
+                    current_row['date'] = current_release['date']
+                current_row['title'] = current_release['title']
+                result_release_df = result_release_df.append(current_row, ignore_index=True)
+        return result_release_df[result_release_df['date'].notnull()].drop_duplicates()
+                
+    def _get_date_from_release_str(self, release_date_str, fill_date_mode='min'):
+        splitted_date_str = release_date_str.split('-')
+        splitted_count = len(splitted_date_str)
+        if (fill_date_mode == 'max'):
+            if (splitted_count == 1):
+                days = calendar.monthrange(int(splitted_date_str[0]), 12)[1]
+                formated_date_str = '{}-12-{}'.format(release_date_str, days)
+            elif (splitted_count == 2):
+                days = calendar.monthrange(int(splitted_date_str[0]), int(splitted_date_str[1]))[1]
+                formated_date_str = '{}-{}'.format(release_date_str, days)
+            else:
+                formated_date_str = release_date_str
+            return datetime.strptime(formated_date_str, '%Y-%m-%d')
+        elif (fill_date_mode == 'min'):
+            splitted_count_to_format = {
+                1: '%Y',
+                2: '%Y-%m',
+                3: '%Y-%m-%d'}
+            return datetime.strptime(release_date_str, splitted_count_to_format[splitted_count])
+    
+    def _get_earliest_releases(self, releases_df):
+        releases_df['date_tmp'] = releases_df['date'].apply(lambda x: self._get_date_from_release_str(x, 'max'))
+        earliset_releases = releases_df[releases_df.groupby(['id'])['date_tmp'].transform(min) == releases_df['date_tmp']].drop_duplicates()
+        earliset_releases['date'] = earliset_releases['date'].apply(lambda x: self._get_date_from_release_str(x, 'min'))
+        return earliset_releases.drop(['date_tmp'], axis=1)
+    
+    def _merge_release_groups_with_releases(self, release_groups_df, releases_df):
+        interesting_releases_df = releases_df[['id', 'date']]
+        return pd.merge(release_groups_df.drop(['date'], axis = 1), interesting_releases_df, on='id')
+    """
                         df_date = recordings_df.loc[recordings_df['id']==current_release_id, 'date']
                         if (pd.isnull(df_date).bool()):
-                            last_dates_priorities[current_release_id] = date_priority
+                            last_dates_priorities[current_release_id] = date_prioritydf
                             recordings_df.loc[recordings_df['id']==current_release_id, 'date'] = current_release_date
                         else:
                             change_date = False
@@ -139,12 +180,13 @@ class MusicbrainzSearcher:
                             if (change_date):
                                 recordings_df.loc[recordings_df['id']==current_release_id, 'date'] = current_release_date
                                 last_dates_priorities[current_release_id] = date_priority
-        
+       """ 
+       
     def get_musicbrainz_albums(self, artist_id):
         release_groups_list = self._get_release_groups(artist_id)
         releases_list = self._get_releases(artist_id)
-        recordings_df = self._get_recordings_from_release_groups(release_groups_list)
-        self._fill_recordings_with_release_data(recordings_df, releases_list)
-        return recordings_df.drop(['id'], axis=1)
-        
+        release_groups_df = self._release_groups_list_to_df(release_groups_list)
+        releases_df = self._releases_list_to_df(releases_list)
+        earliest_releases_df = self._get_earliest_releases(releases_df)
+        return self._merge_release_groups_with_releases(release_groups_df, earliest_releases_df).drop(['id'], axis=1)
         
