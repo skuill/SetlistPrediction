@@ -30,9 +30,9 @@ if (__name__ == '__main__'):
     #search_artist = input('Prompt artist or group name: ')
     #search_artist = 'Parkway drive'
     #search_artist = 'red hot chili peppers'
-    #search_artist = 'rise against'
+    search_artist = 'rise against'
     #search_artist = 'Bury Tomorrow'
-    search_artist = 'In Fear and Faith'
+    #search_artist = 'In Fear and Faith'
     print ('Search for artist:', search_artist)
     if search_artist:
         musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
@@ -46,7 +46,10 @@ if (__name__ == '__main__'):
             events_df, setlists_df = setlistGetter.get_artist_events(interesting_artist)
             utils.save_to_csv(interesting_artist.name, events_df, 'events')
             utils.save_to_csv(interesting_artist.name, setlists_df, 'setlists')
-            
+        else:
+            events_df['eventdate'] = pd.to_datetime(events_df['eventdate'], format='%Y-%m-%d')
+        events_with_recordings_df = utils.add_recordings_to_events_df(events_df, recordings)
+        
         #Events statistics
         city_events_counts = utils.dataframe_group_by_column(events_df, 'city')
         country_events_counts = utils.dataframe_group_by_column(events_df,'country')

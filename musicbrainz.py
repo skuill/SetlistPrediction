@@ -188,5 +188,5 @@ class MusicbrainzSearcher:
         release_groups_df = self._release_groups_list_to_df(release_groups_list)
         releases_df = self._releases_list_to_df(releases_list)
         earliest_releases_df = self._get_earliest_releases(releases_df)
-        return self._merge_release_groups_with_releases(release_groups_df, earliest_releases_df).drop(['id'], axis=1)
+        return self._merge_release_groups_with_releases(release_groups_df, earliest_releases_df).drop(['id'], axis=1).sort_values(by=['date'], ascending=False)
         
