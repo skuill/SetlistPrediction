@@ -1,12 +1,96 @@
 import sys
 import argparse
 from setlistfm import SetlistGetter
+from musicbrainz import MusicbrainzSearcher
 import pandas as pd
 import utils
 
-from musicbrainz import MusicbrainzSearcher
+class UserInformation():
+    def __init__(self, username, password, setlistfm_key):
+        self._username = username
+        self._password = password
+        self._setlistfm_key = setlistfm_key
+        
+    username = property()
+    @username.getter
+    def username(self):
+        return self._username
+    
+    password = property()
+    @password.getter
+    def password(self):
+        return self._password
+    
+    setlistfm_key = property()
+    @setlistfm_key.getter
+    def setlistfm_key(self):
+        return self._setlistfm_key
+    
+    def __str__(self):
+        return 'User: {}. Password: {}. Setlistfm API key: {}.'.format(self._username, self._password, self._setlistfm_key)
 
-if (__name__ == '__main__'):    
+class ArtistData():
+    def __init__(self, artist_information, events, setlists, recordings):
+        self._artist_information = artist_information
+        self._events = events
+        self._setlists = setlists
+        self._recordings = recordings
+    
+    events = property()
+    @events.getter
+    def events(self):
+        return self._events
+        
+    setlists = property()
+    @setlists.getter
+    def setlists(self):
+        return self._setlists
+        
+    recordings = property()
+    @recordings.getter
+    def recordings(self):
+        return self._recordings
+    
+    artist_information = property()
+    @artist_information.getter
+    def artist_information(self):
+        return self._artist_information
+    
+    def is_nan(self):
+        return self._events is None or self._setlists is None or self._recordings is None
+
+class ArtistManager():    
+    def __init__(self, user_information):
+        self._user_information = user_information
+        self._musicbrainz_searcher = MusicbrainzSearcher(user_information.username, user_information.password)
+        self._setlist_getter = SetlistGetter(user_information.setlistfm_key)
+    
+    def process_artist(self, artist_name):
+        artist_information = self._musicbrainz_searcher.get_musicbrainz_artist_info(artist_name)
+        print('Process artist:', artist_information)
+        recordings_df = self._musicbrainz_searcher.get_musicbrainz_albums(artist_information.mbid)
+        events_df, setlists_df = self._setlist_getter.get_artist_events(artist_information)
+        return ArtistData(artist_information, events_df, setlists_df, recordings_df)
+    
+    def save_artist_data(self, artist_data):
+        print('Save artist data:', artist_data.artist_information)
+        utils.save_to_csv(artist_data.artist_information.name, artist_data.events, 'events')
+        utils.save_to_csv(artist_data.artist_information.name, artist_data.setlists, 'setlists')
+        utils.save_to_csv(artist_data.artist_information.name, artist_data.recordings, 'recordings')
+
+    def load_artist_data(self, artist_name):
+        artist_information = self._musicbrainz_searcher.get_musicbrainz_artist_info(artist_name)
+        print('Load artist data:', artist_information)
+        events_df = utils.load_csv(artist_information.name, 'events')
+        setlists_df = utils.load_csv(artist_information.name, 'setlists')
+        recordings_df = utils.load_csv(artist_information.name, 'recordings')
+        if events_df is not None:
+            events_df['eventdate'] = pd.to_datetime(events_df['eventdate'], format='%Y-%m-%d')
+        if recordings_df is not None:
+            recordings_df['date'] = pd.to_datetime(recordings_df['date'], format='%Y-%m-%d')
+        return ArtistData(artist_information, events_df, setlists_df, recordings_df)
+
+def parse_input_arguments():
     parser = argparse.ArgumentParser(prog='SetlistPrediction')
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-u', '--username', 
@@ -17,38 +101,31 @@ if (__name__ == '__main__'):
                                action="store", required=True)
     requiredNamed.add_argument('-sfmk', '--setlistfm_key', 
                                type=str, help="Specify setlistfm API key", 
-                               action="store", required=True)
-    
-    args = parser.parse_args()
-    
+                               action="store", required=True)    
+    args = parser.parse_args()    
     if args.username and args.password and args.setlistfm_key:
-        print ('User: {}. Password: {}. Setlistfm API key: {}.'.format(args.username, args.password, args.setlistfm_key))
+        return UserInformation(args.username, args.password, args.setlistfm_key)
     else:
         parser.print_help()   
         sys.exit('Good Bye!')     
+
+if (__name__ == '__main__'):
     
-    #search_artist = input('Prompt artist or group name: ')
-    #search_artist = 'Parkway drive'
-    #search_artist = 'red hot chili peppers'
-    search_artist = 'rise against'
-    #search_artist = 'Bury Tomorrow'
-    #search_artist = 'In Fear and Faith'
-    print ('Search for artist:', search_artist)
-    if search_artist:
-        musicbrainz_searcher = MusicbrainzSearcher(args.username, args.password)       
-        interesting_artist = musicbrainz_searcher.get_musicbrainz_artist_info(search_artist)
-        recordings = musicbrainz_searcher.get_musicbrainz_albums(interesting_artist.mbid)
-        print(interesting_artist)
-        events_df = utils.load_csv(interesting_artist.name, 'events')
-        setlists_df = utils.load_csv(interesting_artist.name, 'setlists')
-        if events_df is None or setlists_df is None:
-            setlistGetter = SetlistGetter(args.setlistfm_key)
-            events_df, setlists_df = setlistGetter.get_artist_events(interesting_artist)
-            utils.save_to_csv(interesting_artist.name, events_df, 'events')
-            utils.save_to_csv(interesting_artist.name, setlists_df, 'setlists')
-        else:
-            events_df['eventdate'] = pd.to_datetime(events_df['eventdate'], format='%Y-%m-%d')
-        events_with_recordings_df = utils.add_recordings_to_events_df(events_df, recordings)
+    user_information = parse_input_arguments()
+    print (user_information)
+    
+    artist_manager = ArtistManager(user_information)
+    
+    interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive']    
+    for artist_name in interesting_artists:
+        artist_data = artist_manager.load_artist_data(artist_name)
+        if artist_data.is_nan():
+            print ('artist not processed yet', artist_name)
+            artist_data = artist_manager.process_artist(artist_name)
+            artist_manager.save_artist_data(artist_data)
+    
+        '''
+        events_with_recordings_df = utils.add_recordings_to_events_df(events_df, recordings_df)
         
         #Events statistics
         city_events_counts = utils.dataframe_group_by_column(events_df, 'city')
@@ -64,3 +141,5 @@ if (__name__ == '__main__'):
         events_df_nan = events_df[pd.isnull(events_df.drop(['tourname'], axis=1)).any(axis=1)]
         # setlists have many INFO NAN. Ignore this.
         setlists_df_nan = setlists_df[pd.isnull(setlists_df.drop(['info'], axis=1)).any(axis=1)]
+        '''
+    print ('Process Complete!')

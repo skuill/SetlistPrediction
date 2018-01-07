@@ -72,8 +72,8 @@ class MusicbrainzSearcher:
             release_groups_count = int(release_groups['release-group-count'])
             if (release_groups_count > limit):
                 total_pages_to_process = math.ceil(release_groups_count / limit) - 1
-                offset += limit
                 for i in range(total_pages_to_process):
+                    offset += limit
                     release_groups = musicbrainzngs.search_release_groups(arid=artist_id, limit=limit, offset=offset)
                     release_groups_list.append(release_groups)
         except WebServiceError as exc:
@@ -93,8 +93,8 @@ class MusicbrainzSearcher:
             releases_count = int(releases['release-count'])
             if (releases_count > limit):
                 total_pages_to_process = math.ceil(releases_count / limit) - 1
-                offset += limit
                 for i in range(total_pages_to_process):
+                    offset += limit
                     releases = musicbrainzngs.search_releases(arid=artist_id, limit=limit, offset=offset)
                     releases_list.append(releases)
         except WebServiceError as exc:
@@ -166,21 +166,6 @@ class MusicbrainzSearcher:
     def _merge_release_groups_with_releases(self, release_groups_df, releases_df):
         interesting_releases_df = releases_df[['id', 'date']]
         return pd.merge(release_groups_df.drop(['date'], axis = 1), interesting_releases_df, on='id')
-    """
-                        df_date = recordings_df.loc[recordings_df['id']==current_release_id, 'date']
-                        if (pd.isnull(df_date).bool()):
-                            last_dates_priorities[current_release_id] = date_prioritydf
-                            recordings_df.loc[recordings_df['id']==current_release_id, 'date'] = current_release_date
-                        else:
-                            change_date = False
-                            if ((df_date > current_release_date).bool() and date_priority >= last_dates_priorities[current_release_id]):
-                                change_date = True
-                            elif (date_priority > last_dates_priorities[current_release_id]):
-                                change_date = True
-                            if (change_date):
-                                recordings_df.loc[recordings_df['id']==current_release_id, 'date'] = current_release_date
-                                last_dates_priorities[current_release_id] = date_priority
-       """ 
        
     def get_musicbrainz_albums(self, artist_id):
         release_groups_list = self._get_release_groups(artist_id)

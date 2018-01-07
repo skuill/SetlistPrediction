@@ -31,6 +31,8 @@ def add_recordings_to_events_df(events_df, recordings):
     sorted_events_df = events_df.sort_values(by=['eventdate'], ascending=True)
     sorted_events_df['last_recording_date'] = np.nan
     for index, row in sorted_events_df.iterrows():
-        last_recording_date = sorted_recordings[sorted_recordings['date'] <= sorted_events_df.loc[index,'eventdate']]['date'].iloc[-1]
-        sorted_events_df.loc[index, 'last_recording_date'] = last_recording_date
+        released_recordings = sorted_recordings[sorted_recordings['date'] <= sorted_events_df.loc[index,'eventdate']]['date']
+        if (len(released_recordings) > 0):
+            last_released_recording_date = released_recordings.iloc[-1]
+            sorted_events_df.loc[index, 'last_recording_date'] = last_released_recording_date
     return sorted_events_df
