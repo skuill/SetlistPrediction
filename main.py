@@ -116,17 +116,41 @@ if (__name__ == '__main__'):
     
     artist_manager = ArtistManager(user_information)
     
-    interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive']    
+    #interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive'] 
+    interesting_artists = ['metallica']
+    artist_setlists_with_events = {}
     for artist_name in interesting_artists:
+        #Load artist from database or csv
         artist_data = artist_manager.load_artist_data(artist_name)
         if artist_data.is_nan():
+            #Process if artist don't exist in local storage
             print ('artist not processed yet', artist_name)
             artist_data = artist_manager.process_artist(artist_name)
             artist_manager.save_artist_data(artist_data)
-    
-        '''
-        events_with_recordings_df = utils.add_recordings_to_events_df(events_df, recordings_df)
+        #Add last recording date to events
+        events_with_recordings_df = utils.add_recordings_to_events_df(artist_data.events, artist_data.recordings)
+        #Drop events not important features
+        events_with_recordings_df.drop(['venue','venue_id','city','city_id','city_lat','city_lon','state_id','country_id'], axis=1, inplace=True)
+        #Drop setlist not important features
+        artist_data.setlists.drop(['info'], axis=1, inplace=True)
+        #Merge setlist with events info
+        artist_setlists_with_events_df = artist_data.setlists.merge(events_with_recordings_df, how='outer', on='event_id')
         
+        #Events without setlist
+        setlists_counts = utils.dataframe_group_by_column(artist_data.setlists, 'event_id')
+        notIncluding = artist_data.events[~artist_data.events['event_id'].isin(setlists_counts['event_id'])]
+        
+        #NaN Count statistics in dataframe:
+        #artist_data.setlists.isnull().sum()
+        #Select rows with any Nan in row
+        #artist_data.setlists[artist_data.setlists.isnull().any(axis=1)]
+        
+        #Drop setlists without event_id information
+        artist_setlists_with_events_df.dropna(subset=['song_num','name'],inplace=True)
+        
+        artist_setlists_with_events[artist_data.artist_information.name] = artist_setlists_with_events_df
+        
+        '''
         #Events statistics
         city_events_counts = utils.dataframe_group_by_column(events_df, 'city')
         country_events_counts = utils.dataframe_group_by_column(events_df,'country')
