@@ -7,6 +7,7 @@ except:
 import requests
 import pandas as pd
 import math
+import utils
 
 class SetlistGetter:
     _events_columns = ['event_id',
@@ -36,6 +37,7 @@ class SetlistGetter:
 
     def parse_events_dictionary(self, events_dictionary):
         result_events_df = pd.DataFrame(columns = self._events_columns)
+        utils.fix_dataframe_column_types(result_events_df)
         tourName = None
         tour = events_dictionary.get('tour')
         if tour is not None:
@@ -105,8 +107,10 @@ class SetlistGetter:
             events_count = total_events        
         # Total Number of Pages needed to load
         pages_count = math.ceil(events_count/20)
-        result_events_df = pd.DataFrame(columns = self._events_columns)
-        result_setlist_df = pd.DataFrame(columns = self._set_columns)
+        result_events_df = pd.DataFrame(columns = self._events_columns)        
+        utils.fix_dataframe_column_types(result_events_df)
+        result_setlist_df = pd.DataFrame(columns = self._set_columns)     
+        utils.fix_dataframe_column_types(result_setlist_df)
         processed_events = 0
         print ('Events to found:', events_count, '. Pages to process:', pages_count)
                 
@@ -135,7 +139,8 @@ class SetlistGetter:
         return (result_events_df.sort_values(by=['eventdate'], ascending=False), result_setlist_df)
     
     def parse_sets_dictionary(self, sets_dictionary):
-        result_setlist_df = pd.DataFrame(columns = self._set_columns)        
+        result_setlist_df = pd.DataFrame(columns = self._set_columns)       
+        utils.fix_dataframe_column_types(result_setlist_df)     
         song_num = 0
         for i in range(len(sets_dictionary['set'])):
             encore = 0
@@ -160,7 +165,8 @@ class SetlistGetter:
         r = requests.get(url, headers=headers)	
         # Get .json Data
         data = r.json()
-        result_setlist_df = pd.DataFrame(columns = self._set_columns)
+        result_setlist_df = pd.DataFrame(columns = self._set_columns)    
+        utils._fix_dataframe_column_types(result_setlist_df)     
         if ('sets' in data):
             result_setlist_df = pd.concat([result_setlist_df, self.parse_sets_dictionary(data['sets'])], ignore_index=True)
         result_setlist_df['event_id']=event_id

@@ -65,7 +65,7 @@ class ArtistManager():
         self._musicbrainz_searcher = MusicbrainzSearcher(user_information.username, user_information.password)
         self._setlist_getter = SetlistGetter(user_information.setlistfm_key)
     
-    def process_artist(self, artist_name):
+    def get_artist_data(self, artist_name):
         artist_information = self._musicbrainz_searcher.get_musicbrainz_artist_info(artist_name)
         print('Process artist:', artist_information)
         recordings_df = self._musicbrainz_searcher.get_musicbrainz_albums(artist_information.mbid)
@@ -117,7 +117,7 @@ if (__name__ == '__main__'):
     artist_manager = ArtistManager(user_information)
     
     #interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive'] 
-    interesting_artists = ['metallica']
+    interesting_artists = ['In Fear and Faith']
     artist_setlists_with_events = {}
     for artist_name in interesting_artists:
         #Load artist from database or csv
@@ -125,8 +125,9 @@ if (__name__ == '__main__'):
         if artist_data.is_nan():
             #Process if artist don't exist in local storage
             print ('artist not processed yet', artist_name)
-            artist_data = artist_manager.process_artist(artist_name)
+            artist_data = artist_manager.get_artist_data(artist_name)
             artist_manager.save_artist_data(artist_data)
+
         #Add last recording date to events
         events_with_recordings_df = utils.add_recordings_to_events_df(artist_data.events, artist_data.recordings)
         #Drop events not important features
@@ -148,7 +149,9 @@ if (__name__ == '__main__'):
         #Drop setlists without event_id information
         artist_setlists_with_events_df.dropna(subset=['song_num','name'],inplace=True)
         
-        artist_setlists_with_events[artist_data.artist_information.name] = artist_setlists_with_events_df
+        utils.fix_dataframe_column_types(artist_setlists_with_events_df)
+        
+        artist_setlists_with_events[artist_name] = artist_setlists_with_events_df
         
         '''
         #Events statistics
@@ -166,4 +169,9 @@ if (__name__ == '__main__'):
         # setlists have many INFO NAN. Ignore this.
         setlists_df_nan = setlists_df[pd.isnull(setlists_df.drop(['info'], axis=1)).any(axis=1)]
         '''
+    for artist_name in interesting_artists:
+        print("\r\nArtist dataframe information {}:".format(artist_name))
+        print(artist_setlists_with_events[artist_name].info())
+        print("Artist dataframe describe:")
+        print(artist_setlists_with_events[artist_name].describe())
     print ('Process Complete!')

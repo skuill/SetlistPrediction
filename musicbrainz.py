@@ -4,6 +4,7 @@ import math
 import pandas as pd
 from datetime import datetime
 import calendar
+import utils
 
 class Artist:
     def __init__(self, name, mbid):
@@ -80,7 +81,7 @@ class MusicbrainzSearcher:
             raise Exception('Something went wrong with the request to musicbrainz: %s' % exc)
         else:
             return release_groups_list
-        
+                
     def _get_releases(self, artist_id):
         limit = 100
         offset = 0
@@ -104,6 +105,7 @@ class MusicbrainzSearcher:
     
     def _release_groups_list_to_df(self, release_groups_list):
         result_release_groups_df = pd.DataFrame(columns = self._release_groups_columns)
+        utils.fix_dataframe_column_types(result_release_groups_df)
         for i in range(len(release_groups_list)):
             for j in range(len(release_groups_list[i]['release-group-list'])):
                 current_release_group = release_groups_list[i]['release-group-list'][j]
@@ -120,6 +122,7 @@ class MusicbrainzSearcher:
     
     def _releases_list_to_df(self, releases_list):
         result_release_df = pd.DataFrame(columns=self._release_columns)
+        utils.fix_dataframe_column_types(result_release_df)
         for i in range(len(releases_list)):
             for j in range(len(releases_list[i]['release-list'])):
                 current_release = releases_list[i]['release-list'][j]
