@@ -4,6 +4,7 @@ from setlistfm import SetlistGetter
 from musicbrainz import MusicbrainzSearcher
 import pandas as pd
 import utils
+import matplotlib.pyplot as plt
 
 class UserInformation():
     def __init__(self, username, password, setlistfm_key):
@@ -117,7 +118,7 @@ if (__name__ == '__main__'):
     artist_manager = ArtistManager(user_information)
     
     #interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive'] 
-    interesting_artists = ['In Fear and Faith']
+    interesting_artists = ['Parkway Drive']
     artist_setlists_with_events = {}
     for artist_name in interesting_artists:
         #Load artist from database or csv
@@ -173,5 +174,10 @@ if (__name__ == '__main__'):
         print("\r\nArtist dataframe information {}:".format(artist_name))
         print(artist_setlists_with_events[artist_name].info())
         print("Artist dataframe describe:")
-        print(artist_setlists_with_events[artist_name].describe())
+        print(artist_setlists_with_events[artist_name].describe(include=['object', 'bool']))
+        fig, ax = plt.subplots(figsize=(25,14))
+        artist_setlists_with_events[artist_name].groupby(['eventdate','event_id']).size().reset_index(name='count').plot(ax=ax, x='eventdate', y='count', style=['ro--'])
+        last_recording_dates = artist_setlists_with_events[artist_name]['last_recording_date'].unique()
+        for lrd in last_recording_dates:
+            plt.axvline(x=lrd, color='g', linestyle=':')
     print ('Process Complete!')
