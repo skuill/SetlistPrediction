@@ -5,6 +5,7 @@ from musicbrainz import MusicbrainzSearcher
 import pandas as pd
 import utils
 import matplotlib.pyplot as plt
+from sklearn import preprocessing
 
 class UserInformation():
     def __init__(self, username, password, setlistfm_key):
@@ -118,7 +119,7 @@ if (__name__ == '__main__'):
     artist_manager = ArtistManager(user_information)
     
     #interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive'] 
-    interesting_artists = ['Parkway Drive']
+    interesting_artists = ['Bury Tomorrow']
     artist_setlists_with_events = {}
     for artist_name in interesting_artists:
         #Load artist from database or csv
@@ -170,14 +171,29 @@ if (__name__ == '__main__'):
         # setlists have many INFO NAN. Ignore this.
         setlists_df_nan = setlists_df[pd.isnull(setlists_df.drop(['info'], axis=1)).any(axis=1)]
         '''
+    #%%
     for artist_name in interesting_artists:
         print("\r\nArtist dataframe information {}:".format(artist_name))
         print(artist_setlists_with_events[artist_name].info())
         print("Artist dataframe describe:")
         print(artist_setlists_with_events[artist_name].describe(include=['object', 'bool']))
+        
+        # plot eventdate and songs count graphic with last_recording_date lines
         fig, ax = plt.subplots(figsize=(25,14))
         artist_setlists_with_events[artist_name].groupby(['eventdate','event_id']).size().reset_index(name='count').plot(ax=ax, x='eventdate', y='count', style=['ro--'])
         last_recording_dates = artist_setlists_with_events[artist_name]['last_recording_date'].unique()
+        for lrd in last_recording_dates:
+            plt.axvline(x=lrd, color='g', linestyle=':')
+        
+        # plot eventdate and songs on song_num position
+        fig2, ax2 = plt.subplots(figsize=(25,14))
+        songs_df = artist_setlists_with_events[artist_name][['song_num','name','eventdate']]
+        songs_df.set_index('eventdate', inplace=True)
+        label_encoder = preprocessing.LabelEncoder()
+        songs_df['name'] = label_encoder.fit_transform(songs_df['name'])
+        print('Label Encoding Library: ',dict(enumerate(label_encoder.classes_)))
+        #songs_df.groupby('song_num')['name'].plot(ax=ax2, legend=True, style=['o--'])
+        songs_df[songs_df['song_num']==0].plot(ax=ax2, legend=True, style=['o--'], y='name')
         for lrd in last_recording_dates:
             plt.axvline(x=lrd, color='g', linestyle=':')
     print ('Process Complete!')
