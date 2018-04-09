@@ -3,6 +3,7 @@ import argparse
 from setlistfm import SetlistGetter
 from musicbrainz import MusicbrainzSearcher
 import pandas as pd
+import numpy as np
 import utils
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
@@ -119,7 +120,7 @@ if (__name__ == '__main__'):
     artist_manager = ArtistManager(user_information)
     
     #interesting_artists = ['metallica', 'Bury Tomorrow', 'Rise Against', 'Red Hot Chili Peppers', 'In Fear and Faith', 'Parkway Drive'] 
-    interesting_artists = ['Bury Tomorrow']
+    interesting_artists = ['Parkway Drive']
     artist_setlists_with_events = {}
     for artist_name in interesting_artists:
         #Load artist from database or csv
@@ -178,14 +179,24 @@ if (__name__ == '__main__'):
         print("Artist dataframe describe:")
         print(artist_setlists_with_events[artist_name].describe(include=['object', 'bool']))
         
-        # plot eventdate and songs count graphic with last_recording_date lines
+        # Получение dataframe названием, датами начала и окончания тура 
+        tour_with_events = artist_setlists_with_events[artist_name][['tourname','eventdate']].dropna(subset=['tourname']) 
+        #tour_with_events = tour_with_events[pd.notnull(tour_with_events['tourname'])] 
+        tour_event_intervals = tour_with_events.groupby('tourname').agg({'eventdate': {'mindate': np.min, 'maxdate':np.max}}).reset_index() 
+        tour_event_intervals = tour_event_intervals[tour_event_intervals[('tourname','')]!="nan"] 
+        
+        # График количества сыгранных на концерте треков по времени
         fig, ax = plt.subplots(figsize=(25,14))
         artist_setlists_with_events[artist_name].groupby(['eventdate','event_id']).size().reset_index(name='count').plot(ax=ax, x='eventdate', y='count', style=['ro--'])
         last_recording_dates = artist_setlists_with_events[artist_name]['last_recording_date'].unique()
+        # Рисование линий дат выпуска альбомов или ep. 
         for lrd in last_recording_dates:
             plt.axvline(x=lrd, color='g', linestyle=':')
+        # Рисование областей между началом и концом каждого тура 
+        for index, row in tour_event_intervals.iterrows():
+            ax.axvspan(row[('eventdate','mindate')], row[('eventdate','maxdate')], alpha=0.3, color='blue')
         
-        # plot eventdate and songs on song_num position
+        # График по времени изменения отыгранной песни в позиции сетлиста
         fig2, ax2 = plt.subplots(figsize=(25,14))
         songs_df = artist_setlists_with_events[artist_name][['song_num','name','eventdate']]
         songs_df.set_index('eventdate', inplace=True)
@@ -194,6 +205,10 @@ if (__name__ == '__main__'):
         print('Label Encoding Library: ',dict(enumerate(label_encoder.classes_)))
         #songs_df.groupby('song_num')['name'].plot(ax=ax2, legend=True, style=['o--'])
         songs_df[songs_df['song_num']==0].plot(ax=ax2, legend=True, style=['o--'], y='name')
+        # Рисование линий дат выпуска альбомов или ep. 
         for lrd in last_recording_dates:
             plt.axvline(x=lrd, color='g', linestyle=':')
+        # Рисование областей между началом и концом каждого тура 
+        for index, row in tour_event_intervals.iterrows():
+            ax2.axvspan(row[('eventdate','mindate')], row[('eventdate','maxdate')], alpha=0.3, color='blue')
     print ('Process Complete!')
